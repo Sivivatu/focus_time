@@ -1,0 +1,47 @@
+{
+  "name": "FocusTime DevContainer",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".devcontainer"
+  },
+  "workspaceFolder": "/workspaces/focus_time",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/focus_time,type=bind,consistency=cached",
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "AGENT_UPLOAD_INTERVAL": "30",
+    "AGENT_LOG_LEVEL": "info"
+  },
+  "features": {},
+  "forwardPorts": [3000, 5173, 8000, 9123],
+  "portsAttributes": {
+    "3000": { "label": "Dashboard" },
+    "5173": { "label": "Vite/Frontend" },
+    "8000": { "label": "API/Local" },
+    "9123": { "label": "Dev Tools" }
+  },
+  "mounts": [
+    "type=volume,source=go-pkg-cache,target=/go/pkg/mod",
+    "type=volume,source=npm-cache,target=/home/vscode/.npm",
+    "type=volume,source=pnpm-store,target=/home/vscode/.local/share/pnpm/store/v3"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "go.toolsManagement.autoUpdate": true,
+        "go.lintTool": "golangci-lint",
+        "go.useLanguageServer": true,
+        "editor.formatOnSave": true
+      },
+      "extensions": [
+        "golang.Go",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "updateContentCommand": "echo 'Devcontainer ready'",
+  "postCreateCommand": "bash -lc 'go version && node -v && npm -v && pnpm -v || true'"
+}
+
