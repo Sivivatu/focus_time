@@ -1,193 +1,49 @@
-# 🧭 Project FocusTime  
-**Lean MVP Product Requirements Document**  
-**Owner:** Paul Houghton  
-**Version:** v0.1 Draft  
-**Status:** In Definition Phase  
-**Date:** October 2025  
+# Project FocusTime — Product PRD
 
-## 1. Executive Summary
+Version: v0.2 definition draft, 2026-10-20 (historical filename retained).
+Status: MVP definition recorded; implementation and capture validation not yet performed.
 
-**Project FocusTime** is an internal Codex initiative to build a privacy-respecting, data-driven personal productivity tracker inspired by RescueTime.  
-It will enable users to understand how they spend their computer time, automatically generate activity summaries, and lay the foundation for future team and AI-assisted reporting.
+## Governing scope
 
-The MVP will consist of:  
-1. A **Windows background activity tracker** written in Go that securely records application and browser usage.  
-2. A **web dashboard** built with React and a Convex backend that visualises time by category, project, and client.  
-3. A **DuckDB analytics layer (via MotherDuck)** to enable daily aggregations and summary reports.  
+[FT-001 scope and deployment decision](docs/mvp-scope-and-deployment.md) governs this PRD and the [technical PRD](Project_FocusTime_Technical_PRD_v0.1.md). It replaces the October 2025 category/report-first scope and conflicting E2EE promise. Earlier content remains in Git history. [Roadmap #1](https://github.com/Sivivatu/focus_time/issues/1) owns the implementation backlog; this document describes desired behavior, not implemented features.
 
-The goal is to deliver a lightweight, reliable system for individual users and freelancers, designed for eventual expansion to team and cross-platform use.
+## Problem and priority
 
-## 2. Objectives & Success Criteria
+The primary user's repeated project identification and manual assignment/update work in Solidtime is the first problem to solve. FocusTime should capture permitted activity, automatically attribute strong matches to projects, make ambiguity quick to review, and produce trustworthy daily/weekly project timesheets. Relevant RescueTime Timesheets suggestion/review behavior is a reference; broad RescueTime or Solidtime parity is not an MVP gate.
 
-### Objectives
-- Provide full access and transparency to users’ activity data.  
-- Automatically generate meaningful time-usage summaries and weekly reports.  
-- Establish an extensible architecture for multi-platform tracking (Windows → Android → Chrome → Apple).  
-- Ensure offline reliability and robust encryption to guarantee user privacy.
+## Target and deployment
 
-### Success Criteria
-- ✅ Windows tracker records active window titles and browser URLs accurately within a 5-second polling interval.  
-- ✅ Data is encrypted locally and uploaded automatically when online.  
-- ✅ The React dashboard renders aggregated daily and weekly summaries without manual refresh.  
-- ✅ Weekly summary email/report generated server-side.  
-- ✅ End-to-end pipeline (Go → Convex → DuckDB → React) operates with negligible system overhead (<2 % CPU, <100 MB RAM).  
+The user reports Windows 11 Professional x64, Build 26300.9711 (26H2). The confirmed pilot browser is Brave 1.97.59 (Official Build, 64-bit), Chromium 155.0.8059.85. Pilot projects are Alteryx Migrator Development (T3 Code, Alteryx App, identified by the T3 thread/project and supplied worktree) and TIL Administration/Presales (the Brave tab `https://app.convo.com/#/feed`, primarily Google Meet and also Microsoft Teams). FT-001 records the worktree and Convo feed clues. A generic meeting is a proposed ambiguity test; no real ambiguous example was supplied. Release-channel/lifecycle status and capture compatibility remain unverified. Brave is the pilot browser target; validate its actual version rather than assuming Chrome/Edge compatibility.
 
-## 3. Target Users & Use Cases
+Selected deployment/privacy model (user response 2026-10-20): managed Convex with server-readable processing. Supporting stack defaults are React dashboard and Go per-user tray agent with an encrypted offline SQLite queue. WorkOS is the recommended hosted identity provider. The backend reads permitted metadata to run rules and reporting. Local encryption, TLS and storage encryption **are not E2EE**. Local/self-hosted operation and client-only encryption are outside the selected pilot model.
 
-**Primary user:** individuals and freelancers who want clear insight into their digital work patterns.  
+## First useful workflow
 
-**Initial use cases:**
-- Automatically logging work activity for timesheet creation.  
-- Reviewing daily and weekly activity reports by project/client.  
-- Identifying patterns of productive vs. distracting work.  
-- Accessing raw activity data for personal analytics.
+1. Capture foreground app and permitted context in the interactive user session, with local exclusions, pause and idle/lock/sleep accounting.
+2. Match explicit, user-owned rules against reliable project clues. Explain each automatic assignment; leave conflicts and unknown context visible for review.
+3. Review a daily timeline: accept suggestions, assign/correct, split/merge or exclude sessions. Optionally turn a correction into a narrow future rule. Manual overrides survive reruns.
+4. Show current daily/weekly totals by project, with review status, unassigned time and capture gaps. Replaying uploads cannot add duplicate time.
 
-Future use cases (post-MVP):  
-- Multi-device synchronisation (Windows + mobile).  
-- Team dashboards with aggregated visibility.  
-- AI-driven categorisation and semantic tagging.
+Project identity, activity category and productivity rating are separate concepts. Generic shared app/domain matches must not silently assign every activity to one project. Suggestions are not final reviewed time entries or billable commitments.
 
-## 4. System Overview & Architecture
+## Windows MVP boundaries
 
-FocusTime comprises three cooperating components:
+The first slice above precedes the broader M1–M6 release: secure onboarding/device authorization, offline/restart recovery, project/rule management, manual non-computer time without double-counting, portable export, necessary history migration, privacy/deletion controls and Windows packaging. App/category summaries and optional weekly email come after useful project review. No report depends on a nightly warehouse refresh.
 
-1. **Windows Tracker (Go Service)**  
-   - Runs as a background process.  
-   - Captures active window title and browser URL every 5 seconds.  
-   - Detects idle time after 5 minutes of no keyboard/mouse input.  
-   - Stores encrypted data locally (SQLite or BoltDB).  
-   - Streams data to Convex when connectivity is restored.
+Capture only metadata; never screenshots, window contents, typed input or clipboard. Private browsing must be filtered before persistence using a verified mechanism. Unknown browser/private state suppresses sensitive browser context; title substring filtering is insufficient. Full URLs are not a default: use domains and explicitly permitted sanitized paths, removing credentials/query/fragment locally. For the Convo hash route, use only a locally configured exact match that emits a minimal context signal and discards the fragment; if unavailable, suggest for review rather than auto-assigning from the domain. Exact permissions and support boundaries are specified in FT-001 and must be proved before real capture.
 
-2. **Convex Backend**  
-   - Receives and validates device uploads via a device-token model.  
-   - Handles data encryption, storage, and user authentication (via WorkOS).  
-   - Invokes scheduled aggregation jobs to update DuckDB daily tables.  
-   - Supports future Stripe integration for paid tiers.
+Provide user-controlled retention, export and deletion. Proposed raw retention is 30 days; no indefinite raw retention or paid-only access to the user's export. Diagnostic logs exclude activity context and credentials. No additional AI or telemetry service receives activity by default.
 
-3. **DuckDB (via MotherDuck)**  
-   - Stores daily and weekly aggregated views for reporting.  
-   - Enables fast analytical queries from the React dashboard.  
+## Success and replacement gate
 
-4. **React Web Dashboard**  
-   - Displays time by category, top apps, and activity timelines.  
-   - Allows manual re-categorisation and optional back-dating.  
-   - Provides configurable working hours and holiday tracking.  
-   - Offers downloadable summary reports (JSON export for paid tiers).  
+Run a representative five-workday comparison against an independently reviewed interval/project reference. Initial targets: ≥80% automatic coverage of eligible active minutes, ≥95% duration-weighted correctness before correction, <5 minutes daily review including rule maintenance, and ≤5% final total-time discrepancy. FT-001 defines denominators, undefined cases and reporting of gaps, wrong assignments and per-project errors. These targets await user calibration; none has been achieved.
 
-![System Architecture Diagram Placeholder]
+Also verify privacy, offline/restart recovery, duplicate safety, export/deletion and performance. Benchmark targets remain tracker CPU <2%, RAM <100 MB and week-view load <2s on recorded hardware. Keep Solidtime operating until needed history/export is verified and the user explicitly accepts replacement. No uninstall or data deletion is authorized.
 
-## 5. Functional Requirements
+## Deferred scope
 
-### 5.1 Windows Tracker
-- Capture:  
-  - Active window titles and process names.  
-  - Full URLs for browser activity (active tab only).  
-  - Idle detection via keyboard/mouse inactivity > 5 min.  
-  - Time windows defined by user (e.g. 09:00–17:00).  
-- Privacy:  
-  - Never capture window contents.  
-  - Redact incognito/private windows locally.  
-  - Locally encrypt all logs before upload.  
-- Storage & Upload:  
-  - Store events locally when offline; batch upload on reconnect.  
-  - Support configurable verbosity logging in JSON format.  
-  - Include lightweight context UI for settings (polling rate, verbosity, working hours).
+MotherDuck/DuckDB warehouse, goals/alerts/blocking, rich trends, calendar/LLM suggestions, Android/macOS/Linux, additional browsers, teams, billing, Stripe, subscriptions, product telemetry and self-hosted packaging are later work. A companion extension needed for safe Windows URL capture is an MVP capture dependency, distinct from a future browser-only tracker.
 
-### 5.2 Backend (Convex)
-- Handle user/device authentication via WorkOS.  
-- Receive event payloads via secure HTTPS endpoints.  
-- Encrypt at rest using user-derived keys and platform-level encryption.  
-- Trigger daily aggregation jobs into DuckDB.  
-- Expose a simple API endpoint for dashboard queries.  
+## Acceptance state
 
-### 5.3 Analytics Layer (DuckDB / MotherDuck)
-- Maintain event-level data for detailed history.  
-- Create daily aggregates for reporting:  
-  - Total active time by app, category, client/project.  
-  - Productive vs. neutral vs. distracting classification.  
-  - Work vs. personal segmentation.  
-- Retain raw data indefinitely (initially single-user storage).  
-
-### 5.4 Dashboard (React)
-- **Views:** Today, Week, Trends, Categories, Apps/Websites, Goals, Reports.  
-- **Charts:** time by category (stacked bar), top apps, daily timeline.  
-- **User Settings:** working hours, day-of-week profile, dark mode default.  
-- **Accessibility:** WCAG 2.1 compliant, fully keyboard-navigable.  
-- **Reports:** daily/weekly/monthly summaries, downloadable or emailed.  
-
-![Dashboard Overview Placeholder]  
-
-## 6. Non-Functional Requirements
-
-### 6.1 Security & Privacy
-- End-to-end encryption: locally derived keys per user.  
-- TLS enforced for all network communication.  
-- No window content capture, only metadata.  
-- GDPR-aligned design (data portability, erasure readiness).  
-
-### 6.2 Performance
-- Tracker CPU < 2 %; RAM < 100 MB.  
-- Dashboard load < 2 s for a one-week view.  
-- Aggregation jobs complete within 30 s for a single user.  
-
-### 6.3 Reliability
-- Offline-first design for the tracker.  
-- Local data persistence with retry queue.  
-- Unit and integration testing pipeline with coverage > 80 %.  
-
-### 6.4 Maintainability
-- Modular codebases:  
-  - `focus-agent` (Go)  
-  - `focus-backend` (Convex + DuckDB)  
-  - `focus-dashboard` (React)  
-- Configuration via environment variables.  
-- Clear separation of development and production environments.
-
-## 7. CI/CD & Observability
-
-- **Version control:** GitHub (monorepo).  
-- **CI/CD:** GitHub Actions for build, lint, test, and deploy.  
-  - Automated builds for Go service binaries.  
-  - Dockerised deployment for backend and analytics stack.  
-- **Feature flags:** PostHog.  
-- **Error tracking:** Sentry.io integration for both backend and dashboard.  
-- **Logging:** Structured JSON logs with severity levels.  
-- **Monitoring:** Convex metrics dashboard + optional MotherDuck queries.
-
-![CI/CD Pipeline Diagram Placeholder]
-
-## 8. MVP Acceptance Criteria
-
-- Windows tracker runs continuously, recording valid event data.  
-- Event data successfully uploads to Convex and aggregates nightly.  
-- React dashboard displays daily and weekly usage summaries.  
-- Weekly report generation functional (view and email).  
-- All communications encrypted end-to-end.  
-- Basic onboarding (WorkOS sign-in) functional.  
-- System stable for 1-week continuous run with minimal performance impact.  
-
-## 9. Future Roadmap (Not in MVP Scope)
-
-| Phase | Feature | Description |
-|-------|----------|-------------|
-| **Phase 2** | Android Tracker | Background tracking of app usage, integrated via shared Convex API. |
-| **Phase 3** | Chrome Extension | Browser-only tracking for cross-device continuity. |
-| **Phase 4** | Apple & Linux Support | Native agents for macOS & Linux. |
-| **Phase 5** | Team Dashboards | Aggregated reporting by team/project with privacy-preserving summarisation. |
-| **Phase 6** | AI/LLM Tagging | Semantic clustering of activity using OpenAI/Gemini via OpenRouter. |
-| **Phase 7** | Paid Plans | Stripe-enabled subscriptions unlocking multiple devices, raw data export, and team analytics. |
-| **Phase 8** | Self-Host Option | Docker-based deployment for enterprise or privacy-first users. |
-
-![Product Roadmap Placeholder]
-
-## 10. Next Steps
-
-1. **Confirm technical stack setup** (Convex project, DuckDB schema, Go build pipeline).  
-2. **Define API contracts** for event upload and dashboard queries.  
-3. **Create design mock-ups** for dashboard layout (RescueTime-style summary aesthetic).  
-4. **Implement Windows tracker prototype** with secure local storage.  
-5. **Stand-up CI/CD pipeline** with PostHog and Sentry integrations.  
-6. **Deliver MVP milestone demo** (tracker + dashboard + weekly report).  
-
-**End of Document**  
-_This PRD defines the initial implementation scope for Project FocusTime MVP. Subsequent updates (v0.2+) will expand on data schemas, API specifications, and UI mock-ups._
+The three definition criteria for issue #2 are documented and ready for review/integration. Windows/browser versions, both project contexts/clues and the deployment/privacy choice are recorded. The workflow is defined; numerical pilot targets remain starting targets to calibrate before the run. Implementation belongs to sibling issues; there is no working application in this definition change.
