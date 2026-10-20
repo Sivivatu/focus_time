@@ -1,6 +1,8 @@
 # Project FocusTime — Task List (MVP)
 
-Source: Project_FocusTime_PRD_v0.1.md and Project_FocusTime_Technical_PRD_v0.1.md
+> Historical October 2025 checklist, retained for reference; not the current execution backlog.
+> [FT-001](docs/mvp-scope-and-deployment.md) and the revised PRDs supersede conflicting items below (MotherDuck, PBKDF2/OIDC assumptions, title-only private filtering, Docker deployment, Stripe and weekly-email-first release).
+> Use [roadmap #1](https://github.com/Sivivatu/focus_time/issues/1) and its linked issues for current scope and acceptance. FT-001 records the selected managed/server-readable model, actual Windows/Brave versions and two representative project contexts; implementation validation remains future work.
 
 ## Phase Plan
 - [ ] v0.1 Prototype — basic tracker + manual upload
